@@ -1,0 +1,61 @@
+diff -ru a/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.cpp b/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.cpp
+--- a/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.cpp	2026-10-17 14:04:17.373708300 +0200
++++ b/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.cpp	2026-10-17 14:04:37.195287600 +0200
+@@ -342,6 +342,18 @@
+   return m_software_breakpoints.find(addr) != m_software_breakpoints.end();
+ }
+ 
++bool NativeProcessWindows::IsRemovedSoftwareBreakpoint(lldb::addr_t addr) {
++  // A trap instruction of the program itself (e.g. __debugbreak()) is still in
++  // memory; one of ours that was removed is not.
++  llvm::ArrayRef<uint8_t> trap = cantFail(GetSoftwareBreakpointTrapOpcode(0));
++  llvm::SmallVector<uint8_t, 4> current(trap.size());
++  size_t bytes_read = 0;
++  if (ReadMemory(addr, current.data(), current.size(), bytes_read).Fail() ||
++      bytes_read != current.size())
++    return false;
++  return !llvm::equal(current, trap);
++}
++
+ Status NativeProcessWindows::SetBreakpoint(lldb::addr_t addr, uint32_t size,
+                                            bool hardware) {
+   if (hardware)
+@@ -576,6 +588,24 @@
+         return ExceptionResult::MaskException;
+       }
+     }
++
++    // A breakpoint that was removed after this thread had already hit it:
++    // when two threads hit the same breakpoint at nearly the same time, the
++    // second exception is still queued while the debugger handles the first
++    // stop, and the client may remove the breakpoint (or lift it to step the
++    // first thread over it) before the queued exception arrives. The trap
++    // instruction is gone from memory then. Undo the PC increment of the trap
++    // and let the thread go on: it runs the original instruction, or hits the
++    // breakpoint again once it is back. Without this, the thread is reported
++    // as stopped by an unknown exception, with its PC in the middle of the
++    // original instruction.
++    if (m_initial_stop_seen && IsRemovedSoftwareBreakpoint(exception_addr)) {
++      LLDB_LOG(log,
++               "Hit removed breakpoint at address {0:x}, resuming the thread.",
++               exception_addr);
++      reg_ctx.SetPC(reg_ctx.GetPC() - GetSoftwareBreakpointPCOffset());
++      return ExceptionResult::MaskException;
++    }
+   }
+ 
+   if (!m_initial_stop_seen) {
+diff -ru a/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.h b/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.h
+--- a/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.h	2026-10-17 14:04:45.103464600 +0200
++++ b/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.h	2026-10-17 14:05:16.007755000 +0200
+@@ -150,6 +150,10 @@
+ 
+   bool FindSoftwareBreakpoint(lldb::addr_t addr);
+ 
++  /// Whether a trap that hit at addr came from a software breakpoint that has
++  /// been removed since: the trap instruction is no longer in memory.
++  bool IsRemovedSoftwareBreakpoint(lldb::addr_t addr);
++
+   void StopThread(lldb::tid_t thread_id, lldb::StopReason reason,
+                   std::string description = "");
+ 
