@@ -14,12 +14,13 @@ Each [release](../../releases) has:
 | File | Contents |
 | --- | --- |
 | `lldb-server.exe` | the program, stripped |
-| `lldb-server-debug.exe` | the same build with its DWARF debug info, for symbolizing crashes |
-| `SHA256SUMS` | checksums of both |
+| `lldb-server-debug.exe.xz` | the same build with its DWARF debug info, for symbolizing crashes (xz-compressed) |
+| `SHA256SUMS` | checksums of both `.exe` (unpacked) |
 | `versions.txt` | LLVM and llvm-mingw versions and the checksum of each patch |
-| `licenses/` | licenses of LLVM, libc++ and libunwind, which are linked into the `.exe` |
+| `licenses.zip` | licenses of LLVM, libc++, libunwind and the mingw-w64 runtime, which are linked into the `.exe` |
 
-Releases are tagged `<LLVM version>-<revision of the patches>`, e.g. `23.1.3-1`.
+Releases are tagged `<LLVM version>-<revision of the patches>`, e.g. `23.1.3-1`. The build is reproducible: building
+the same tag gives files with the same checksums.
 
 ## The fixes
 
