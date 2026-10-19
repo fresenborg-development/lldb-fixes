@@ -9,7 +9,7 @@ statically: it needs no DLLs besides those of Windows.
 
 ## Download
 
-Each [release](../../releases) has:
+Each [release](https://gitlab.com/fresenborg-development/lldb-server-windows/-/releases) has:
 
 | File | Contents |
 | --- | --- |
