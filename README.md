@@ -1,12 +1,13 @@
 # lldb-fixes
 
-Our fixes to LLDB until LLVM has them: patches against the LLVM release sources, a reproducible build for each
-program, and the built files as [releases](https://gitlab.com/fresenborg-development/lldb-fixes/-/releases). A part
+Our fixes to LLDB until LLVM has them: patches against LLVM's sources, a build or build notes for each program,
+and built files as [releases](https://gitlab.com/fresenborg-development/lldb-fixes/-/releases). A part
 goes away once its fixes are in an LLVM release.
 
 | Part | What it fixes |
 | --- | --- |
 | [lldb-server-windows](lldb-server-windows/) | `lldb-server.exe` for Windows: a stray stop and a crash when two threads hit the same breakpoint (LLVM 23.1.3) |
+| [lldb-dap-linux](lldb-dap-linux/) | `lldb-dap`: a crash on a frame whose symbol has no name (LLVM 23; patch and build notes, no release) |
 
 ## License
 

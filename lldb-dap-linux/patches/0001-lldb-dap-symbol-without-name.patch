@@ -1,0 +1,23 @@
+diff --git a/lldb/tools/lldb-dap/DAP.cpp b/lldb/tools/lldb-dap/DAP.cpp
+index 81492ebc..2d8c04c0 100644
+--- a/lldb/tools/lldb-dap/DAP.cpp
++++ b/lldb/tools/lldb-dap/DAP.cpp
+@@ -668,11 +668,16 @@ DAP::ResolveAssemblySource(lldb::SBAddress address) {
+   std::string name;
+   if (symbol.IsValid()) {
+     load_addr = symbol.GetStartAddress().GetLoadAddress(target);
+-    name = symbol.GetName();
++    // A symbol can have no name (e.g. a function of a Windows DLL known only
++    // from its unwind information): GetName() is nullptr then, which must not
++    // become a std::string.
++    if (const char *symbol_name = symbol.GetName())
++      name = symbol_name;
+   } else {
+     load_addr = address.GetLoadAddress(target);
+-    name = GetLoadAddressString(load_addr);
+   }
++  if (name.empty())
++    name = GetLoadAddressString(load_addr);
+ 
+   if (load_addr == LLDB_INVALID_ADDRESS)
+     return std::nullopt;
